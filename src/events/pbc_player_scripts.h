@@ -11,6 +11,7 @@ class Item;
 class Creature;
 class Quest;
 class Roll;
+class Spell;
 
 // ---------------------------------------------------------------------------
 // Listens to player events and feeds them to the character system.
@@ -41,6 +42,9 @@ public:
     void OnPlayerCreatureKill(Player* killer, Creature* killed) override;
     void OnPlayerCompleteQuest(Player* player, Quest const* quest) override;
     void OnPlayerJustDied(Player* player) override;
+
+    // Combat log — recent spell casts rendered into the prompt context
+    void OnPlayerSpellCast(Player* player, Spell* spell, bool skipCheck) override;
 };
 
 // Bitmask of item classes that trigger loot events.

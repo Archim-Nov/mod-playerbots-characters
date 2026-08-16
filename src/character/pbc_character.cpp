@@ -1,4 +1,5 @@
 #include "pbc_character.h"
+#include "pbc_combat_log.h"
 #include "pbc_config.h"
 #include "pbc_database.h"
 #include "pbc_http.h"
@@ -50,6 +51,7 @@ PBC_VarMap PBC_BuildVarMap(Player* bot, const std::string& event)
     vars["scene"]        = PBC_BuildSceneStr(bot);
     vars["pet_info"]     = PBC_BuildPetInfoStr(bot);
     vars["combat_status"] = PBC_BuildCombatStatusStr(bot);
+    vars["combat_log"]   = g_PBC_CombatLogEnable ? PBC_GetCombatLogFor(bot, g_PBC_CombatLogLines) : "";
     vars["equipment"]    = PBC_BuildEquipmentStr(bot);
     vars["char_group"]   = PBC_BuildGroupStatusStr(bot);
     vars["char_los"]     = PBC_BuildLosStr(bot);
@@ -73,6 +75,7 @@ PBC_VarMap PBC_BuildVarMapFromSnapshot(const PBC_CharacterSnapshot& snap, const 
     vars["scene"]        = snap.scene;
     vars["pet_info"]     = snap.petInfo;
     vars["combat_status"] = snap.combatStatus;
+    vars["combat_log"]   = snap.combatLog;
     vars["equipment"]    = snap.equipment;
     vars["char_group"]   = snap.charGroup;
     vars["char_los"]     = snap.charLos;
@@ -758,6 +761,9 @@ PBC_CharacterSnapshot PBC_SnapshotCharacter(Player* bot)
 
     // Combat status
     snap.combatStatus = PBC_BuildCombatStatusStr(bot);
+
+    // Recent group combat log (spell casts)
+    snap.combatLog = g_PBC_CombatLogEnable ? PBC_GetCombatLogFor(bot, g_PBC_CombatLogLines) : "";
 
     // Equipment
     snap.equipment = PBC_BuildEquipmentStr(bot);

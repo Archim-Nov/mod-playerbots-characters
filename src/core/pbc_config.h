@@ -63,6 +63,10 @@ extern std::string g_PBC_CharacterCardsPath;
 extern uint32_t g_PBC_ReplyChanceWhisper;
 extern uint32_t g_PBC_ReplyChanceMention;
 extern uint32_t g_PBC_ReplyChanceMessage;
+
+// Combat log (recent group spell casts rendered into the prompt context)
+extern bool     g_PBC_CombatLogEnable;
+extern uint32_t g_PBC_CombatLogLines;
 extern uint32_t g_PBC_RollPenaltyOnAnswer;
 extern uint32_t g_PBC_ReplyChanceItem;
 extern uint32_t g_PBC_ReplyChanceDuel;
@@ -129,6 +133,7 @@ struct PBC_CharacterSnapshot
     std::string charGroup;
     std::string charLos;
     std::string combatStatus;
+    std::string combatLog;
     std::string equipment;
 
     // The character's history at the moment of snapshotting.

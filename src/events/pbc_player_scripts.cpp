@@ -8,6 +8,7 @@
 #include "pbc_quest_helpers.h"
 #include "pbc_group_helpers.h"
 #include "pbc_event_dispatch.h"
+#include "pbc_combat_log.h"
 #include "pbc_poll.h"
 #include "pbc_http.h"
 #include "pbc_log.h"
@@ -23,6 +24,12 @@
 #include "ObjectMgr.h"
 #include "WorldSession.h"
 #include "GameTime.h"
+#include "Spell.h"
+#include "SpellInfo.h"
+
+#ifdef MOD_NPC_CHAT
+#include "npc_chat_api.h"
+#endif
 
 #include <algorithm>
 #include <ctime>
@@ -77,6 +84,14 @@ static void HandleChatMessage(Player* sender, uint32 type, uint32 lang,
     if (senderIsBot)
         return;
 
+#ifdef MOD_NPC_CHAT
+    // A say directed at an NPC is fed back by mod-npc-chat as a combined
+    // narrator event (player line + NPC reply).  Skip the context-free chat
+    // event for the player's line itself so bots don't react twice.
+    if (type == CHAT_MSG_SAY && NpcChat_ConsumeNpcDirectedSay(sender->GetGUID()))
+        return;
+#endif
+
     bool isGroupChat = (type == CHAT_MSG_PARTY || type == CHAT_MSG_PARTY_LEADER ||
                         type == CHAT_MSG_RAID  || type == CHAT_MSG_RAID_LEADER  ||
                         type == CHAT_MSG_RAID_WARNING);
@@ -103,6 +118,7 @@ PBC_PlayerEvents::PBC_PlayerEvents() : PlayerScript("PBC_PlayerEvents",
     PLAYERHOOK_ON_CREATURE_KILL,
     PLAYERHOOK_ON_PLAYER_COMPLETE_QUEST,
     PLAYERHOOK_ON_PLAYER_JUST_DIED,
+    PLAYERHOOK_ON_SPELL_CAST,
 }) {}
 
 bool PBC_PlayerEvents::OnPlayerCanUseChat(Player* player, uint32 type, uint32 lang,
@@ -238,6 +254,22 @@ void PBC_PlayerEvents::OnPlayerCreatureKill(Player* killer, Creature* killed)
     if (!PBC_PTR_VALID(killer) || !PBC_PTR_VALID(killed)) return;
 
     PBC_TrackGroupKill(killer, killed);
+}
+
+// May fire on a map worker thread — PBC_RecordCombatAction is mutex-guarded.
+void PBC_PlayerEvents::OnPlayerSpellCast(Player* player, Spell* spell, bool /*skipCheck*/)
+{
+    if (!g_PBC_Enable || !g_PBC_CombatLogEnable) return;
+    if (!PBC_PTR_VALID(player) || !PBC_PTR_VALID(spell)) return;
+    if (!player->IsInCombat()) return;
+
+    SpellInfo const* info = spell->GetSpellInfo();
+    if (!info) return;
+
+    std::string spellName = std::string(PBC_DbcString(info->SpellName.data()));
+    if (spellName.empty()) return;
+
+    PBC_RecordCombatAction(player, "casts " + spellName);
 }
 
 void PBC_PlayerEvents::OnPlayerJustDied(Player* player)

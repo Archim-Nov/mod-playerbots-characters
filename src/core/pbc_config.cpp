@@ -54,6 +54,9 @@ std::string g_PBC_CharacterCardsPath = "../../../modules/mod-playerbots-characte
 uint32_t g_PBC_ReplyChanceWhisper   = 100;
 uint32_t g_PBC_ReplyChanceMention   = 100;
 uint32_t g_PBC_ReplyChanceMessage   = 100;
+
+bool     g_PBC_CombatLogEnable = true;
+uint32_t g_PBC_CombatLogLines  = 30;
 uint32_t g_PBC_RollPenaltyOnAnswer  = 45;
 uint32_t g_PBC_ReplyChanceItem     = 5;
 uint32_t g_PBC_ReplyChanceDuel     = 5;
@@ -460,6 +463,9 @@ void PBC_LoadConfig(bool /*isStartup*/)
     g_PBC_ReplyChanceWhisper   = sConfigMgr->GetOption<uint32_t>("PBC.ReplyChanceWhisper", 100);
     g_PBC_ReplyChanceMention   = sConfigMgr->GetOption<uint32_t>("PBC.ReplyChanceMention", 100);
     g_PBC_ReplyChanceMessage   = sConfigMgr->GetOption<uint32_t>("PBC.ReplyChanceMessage", 100);
+
+    g_PBC_CombatLogEnable = sConfigMgr->GetOption<bool>("PBC.CombatLog.Enable", true);
+    g_PBC_CombatLogLines  = sConfigMgr->GetOption<uint32_t>("PBC.CombatLog.Lines", 30);
     g_PBC_RollPenaltyOnAnswer  = sConfigMgr->GetOption<uint32_t>("PBC.RollPenaltyOnAnswer", 45);
     g_PBC_ReplyChanceItem     = sConfigMgr->GetOption<uint32_t>("PBC.ReplyChanceItem", 5);
     g_PBC_ReplyChanceDuel     = sConfigMgr->GetOption<uint32_t>("PBC.ReplyChanceDuel", 5);

@@ -104,7 +104,8 @@ void AddTrackedPlayersToEvent(PBC_EventItem& ev, Player* anchor, bool subGroupOn
 // ---------------------------------------------------------------------------
 void PBC_DispatchGroupEvent(Player* anchor, const std::string& eventLine,
                              const std::string& narratorText, uint32_t chance,
-                             bool notifyRealPlayers)
+                             bool notifyRealPlayers,
+                             uint32_t chatTypeOverride)
 {
     if (!PBC_PTR_VALID(anchor)) return;
 
@@ -135,7 +136,7 @@ void PBC_DispatchGroupEvent(Player* anchor, const std::string& eventLine,
     ev.source.narratorText = narratorText;
     // Use raid chat when the anchor is in a raid group so that members in
     // other sub-groups can see the responses; party chat otherwise.
-    ev.chatType        = PBC_GetGroupChatType(anchor);
+    ev.chatType        = chatTypeOverride ? chatTypeOverride : PBC_GetGroupChatType(anchor);
     ev.canCreateEvents = true;
 
     // Record the real player who triggered this event (for regen logging).

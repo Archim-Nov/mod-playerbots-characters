@@ -8,6 +8,7 @@
 #include "ObjectAccessor.h"
 #include "ObjectMgr.h"
 #include "Creature.h"
+#include "GameObject.h"
 #include "Map.h"
 #include "GameTime.h"
 #include "DBCStores.h"
@@ -33,9 +34,11 @@
 
 static std::string TimeOfDayLabel()
 {
-    // Derive time-of-day from the real server clock (UTC).
+    // Derive time-of-day from the server's local clock. In-game time follows
+    // the server clock (mod-TimeIsTime keeps it in sync with real time), so
+    // localtime matches what players see on their client clock.
     time_t rawTime = static_cast<time_t>(GameTime::GetGameTime().count());
-    struct tm* t = gmtime(&rawTime);
+    struct tm* t = localtime(&rawTime);
     int hour = t ? t->tm_hour : 12;
 
     if (hour >= 0  && hour < 2)  return PBC_Localize("early night");
@@ -50,6 +53,16 @@ static std::string TimeOfDayLabel()
     if (hour >= 18 && hour < 20) return PBC_Localize("early evening");
     if (hour >= 20 && hour < 22) return PBC_Localize("late evening");
     return PBC_Localize("early night");
+}
+
+// Returns the current server-local clock time as "HH:MM", or "" on failure.
+static std::string LocalClockStr()
+{
+    time_t rawTime = static_cast<time_t>(GameTime::GetGameTime().count());
+    struct tm* t = localtime(&rawTime);
+    if (!t)
+        return "";
+    return fmt::format("{:02d}:{:02d}", t->tm_hour, t->tm_min);
 }
 
 #ifdef MOD_WEATHER_VIBE
@@ -249,6 +262,18 @@ std::string PBC_BuildLosStr(Player* bot)
                 creatureName = c->GetName();
             nameCounts[creatureName]++;
         }
+
+        // Named game objects (mailboxes, anvils, campfires, quest objects...)
+        for (auto const& pair : map->GetGameObjectBySpawnIdStore())
+        {
+            GameObject* go = pair.second;
+            if (!go || !go->isSpawned()) continue;
+            if (!bot->IsWithinDistInMap(go, kLosRadius)) continue;
+            if (!bot->IsWithinLOS(go->GetPositionX(), go->GetPositionY(), go->GetPositionZ())) continue;
+            std::string const& goName = go->GetName();
+            if (goName.empty()) continue;
+            nameCounts[goName]++;
+        }
     }
 
     // Build grouped entries, sorted by count ascending (unique NPCs first)
@@ -265,6 +290,12 @@ std::string PBC_BuildLosStr(Player* bot)
             entries.push_back(pair.first);
     }
 
+    // Keep the surroundings list prompt-sized: unique objects first
+    // (entries are sorted by count ascending).
+    constexpr size_t kMaxEntries = 15;
+    if (entries.size() > kMaxEntries)
+        entries.resize(kMaxEntries);
+
     return PBC_NaturalList(entries);
 }
 
@@ -275,6 +306,8 @@ std::string PBC_BuildLosStr(Player* bot)
 std::string PBC_BuildSceneStr(Player* bot)
 {
     std::string timeLabel = TimeOfDayLabel();
+    if (std::string clock = LocalClockStr(); !clock.empty())
+        timeLabel += " (" + clock + ")";
 
     // Build the time/weather suffix (lowercase, no trailing period — it will be
     // appended after a comma inside a larger sentence).

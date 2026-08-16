@@ -35,10 +35,13 @@ void PBC_NotifyRealPlayersInGroup(Player* anchor, const std::string& eventLine);
 //   ev.source.narratorText; histLine is derived automatically.
 // notifyRealPlayers=false: suppress the narrator system message sent to real
 // players in the group (used for combat events, which can be very frequent).
+// chatTypeOverride!=0: force the reply channel (e.g. CHAT_MSG_SAY) instead of
+// the default group chat type derived from the anchor.
 // ---------------------------------------------------------------------------
 void PBC_DispatchGroupEvent(Player* anchor, const std::string& eventLine,
                              const std::string& narratorText, uint32_t chance,
-                             bool notifyRealPlayers = true);
+                             bool notifyRealPlayers = true,
+                             uint32_t chatTypeOverride = 0);
 
 // ---------------------------------------------------------------------------
 // Roll bots with decaying penalty.  Does NOT shuffle — caller should shuffle
