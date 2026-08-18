@@ -19,6 +19,9 @@
 #include "SharedDefines.h"
 #include "GameTime.h"
 
+#include <algorithm>
+#include <unordered_map>
+
 PBC_WorldScript::PBC_WorldScript() : WorldScript("PBC_WorldScript") {}
 
 void PBC_WorldScript::OnStartup()
@@ -366,6 +369,37 @@ void PBC_WorldScript::OnUpdate(uint32_t diff)
 
                 if (bot && bot->IsInWorld())
                 {
+                    // Hidden action tag [EMOTE:name] in LLM replies: perform the
+                    // whitelisted emote and strip the tag before showing text.
+                    {
+                        static const std::unordered_map<std::string, uint32_t> emoteWhitelist = {
+                            { "wave", EMOTE_ONESHOT_WAVE },   { "bow", EMOTE_ONESHOT_BOW },
+                            { "cheer", EMOTE_ONESHOT_CHEER }, { "dance", EMOTE_STATE_DANCE },
+                            { "laugh", EMOTE_ONESHOT_LAUGH }, { "sleep", EMOTE_STATE_SLEEP },
+                            { "sit", EMOTE_STATE_SIT },       { "kneel", EMOTE_STATE_KNEEL },
+                            { "kiss", EMOTE_ONESHOT_KISS },   { "cry", EMOTE_ONESHOT_CRY },
+                            { "beg", EMOTE_ONESHOT_BEG },     { "flex", EMOTE_ONESHOT_FLEX },
+                            { "point", EMOTE_ONESHOT_POINT }, { "salute", EMOTE_ONESHOT_SALUTE },
+                            { "stand", EMOTE_STATE_STAND },
+                        };
+                        size_t tagPos = action.text.find("[EMOTE:");
+                        if (tagPos != std::string::npos)
+                        {
+                            size_t tagEnd = action.text.find(']', tagPos);
+                            if (tagEnd != std::string::npos)
+                            {
+                                std::string name = action.text.substr(tagPos + 7, tagEnd - tagPos - 7);
+                                std::transform(name.begin(), name.end(), name.begin(),
+                                               [](unsigned char c) { return std::tolower(c); });
+                                action.text.erase(tagPos, tagEnd - tagPos + 1);
+                                while (!action.text.empty() && (action.text.back() == ' ' || action.text.back() == '\n'))
+                                    action.text.pop_back();
+                                if (auto it = emoteWhitelist.find(name); it != emoteWhitelist.end())
+                                    bot->HandleEmoteCommand(it->second);
+                            }
+                        }
+                    }
+
                     uint32_t ct = action.chatType;
 
                     if (ct == CHAT_MSG_WHISPER && !action.targetGuid.IsEmpty())
